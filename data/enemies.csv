@@ -1,0 +1,7 @@
+key,value
+enemy_base_hp,1
+enemy_speed,60
+wave_size_base,3
+wave_size_growth_per_100m,1
+wave_spacing_min,200
+wave_spacing_max,400

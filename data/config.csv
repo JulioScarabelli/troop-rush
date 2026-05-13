@@ -1,0 +1,10 @@
+key,value
+app_name,Troop Rush
+start_troops,5
+max_troops,50
+base_speed,120
+speed_increase_per_100m,5
+max_speed,300
+troop_fire_rate,2
+bullet_damage,1
+bullet_speed,400
