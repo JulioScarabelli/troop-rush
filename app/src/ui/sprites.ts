@@ -9,10 +9,11 @@ export function getTheme(): string {
 }
 
 export function resolveSpritePath(path: string): string {
-  if (path.includes("/themes/")) return path;
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  if (path.includes("/themes/")) return base + path;
   if (path.startsWith("/sprites/")) {
     const rest = path.replace("/sprites/", "");
-    return `/sprites/themes/${currentTheme}/${rest}`;
+    return `${base}/sprites/themes/${currentTheme}/${rest}`;
   }
   return path;
 }
