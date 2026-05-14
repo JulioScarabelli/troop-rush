@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   root: "app",
+  base: process.env.GITHUB_PAGES === "true" ? "/troop-rush/" : "/",
   plugins: [react()],
   publicDir: "../data",
   resolve: {

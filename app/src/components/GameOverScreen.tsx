@@ -1,3 +1,5 @@
+import { resolveSpritePath } from "../ui/sprites";
+
 interface GameOverScreenProps {
   score: number;
   highScore: number;
@@ -12,25 +14,26 @@ export default function GameOverScreen({
   onRestart,
 }: GameOverScreenProps) {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/70 backdrop-blur-sm">
-      <div className="text-center">
-        <h2 className="text-3xl font-black text-red-400 mb-2">GAME OVER</h2>
+    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 gameover-backdrop">
+      <div className="text-center px-6">
+        <h2 className="gameover-title">GAME OVER</h2>
 
-        <div className="ui-panel my-6 mx-4">
-          <div className="text-sm ink-soft">Distance</div>
-          <div className="text-3xl font-bold ink-strong tabular-nums">{score}m</div>
+        <div className="score-card my-8">
+          <div className="text-xs ink-soft uppercase tracking-widest mb-1">Distance</div>
+          <div className="score-value">{score}m</div>
 
           {isNewHighScore && (
-            <div className="text-sm text-yellow-400 font-bold mt-2 animate-pulse">
-              NEW BEST!
-            </div>
+            <div className="new-best-badge">NEW BEST!</div>
           )}
 
-          <div className="text-xs ink-soft mt-2">Best: {highScore}m</div>
+          <div className="text-xs ink-soft mt-3">Best: {highScore}m</div>
         </div>
 
-        <button className="ui-cta text-lg px-8 py-3" onClick={onRestart}>
-          PLAY AGAIN
+        <button className="play-btn-img" onClick={onRestart}>
+          <img
+            src={resolveSpritePath("/sprites/ui/btn-play.png")}
+            alt="Play Again"
+          />
         </button>
       </div>
     </div>

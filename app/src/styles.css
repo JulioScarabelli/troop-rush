@@ -11,15 +11,15 @@
 }
 
 html {
-  --bg: linear-gradient(170deg, #1a1a2e 0%, #16213e 100%);
+  --bg: linear-gradient(170deg, #1a3520 0%, #0f1f15 100%);
   --panel: rgba(255, 255, 255, 0.92);
   --text: #e0e0e0;
-  --text-muted: #8b95a5;
-  --border: rgba(255, 255, 255, 0.1);
-  --accent: #4f46e5;
-  --ink-strong: #ffffff;
-  --ink-soft: #8b95a5;
-  --ink-inverse: #1a1a2e;
+  --text-muted: #a0b89c;
+  --border: rgba(120, 200, 100, 0.2);
+  --accent: #65a30d;
+  --ink-strong: #f3f8e8;
+  --ink-soft: #a0b89c;
+  --ink-inverse: #1a2e0f;
   --surface-strong: var(--panel);
 }
 
@@ -52,13 +52,10 @@ body {
   height: var(--game-height, var(--app-height, 100vh));
   min-height: var(--game-height, var(--app-height, 100vh));
   background: var(--bg);
-  padding-top: calc(0.375rem + var(--safe-top));
-  padding-bottom: calc(0.375rem + var(--safe-bottom));
-  padding-left: calc(0.5rem + var(--safe-left, 0px));
-  padding-right: calc(0.5rem + var(--safe-right, 0px));
+  padding: 0;
   margin-top: max(0px, calc((var(--app-height, 100vh) - var(--game-height, 100vh)) / 2));
   margin-bottom: max(0px, calc((var(--app-height, 100vh) - var(--game-height, 100vh)) / 2));
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 60px rgba(99, 102, 241, 0.08);
 }
 
 .game-screen {
@@ -79,6 +76,231 @@ body {
 .ink-strong { color: var(--ink-strong); }
 .ink-soft { color: var(--ink-soft); }
 .ink-inverse { color: var(--ink-inverse); }
+
+/* ── HUD ─────────────────────────────────────────── */
+
+.hud-chip {
+  background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(15,23,42,0.7));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 6px 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  min-width: 80px;
+}
+.hud-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+}
+.hud-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* ── Lane Buttons ────────────────────────────────── */
+
+.lane-btn {
+  width: 90px;
+  height: 60px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.lane-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 2px solid rgba(255,255,255,0.15);
+  pointer-events: none;
+}
+.lane-btn:active {
+  transform: scale(0.9);
+}
+.lane-btn-arrow {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+.lane-btn-text {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+}
+
+.lane-btn-left {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+.lane-btn-right {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.lane-btn-active {
+  box-shadow: 0 0 20px rgba(255,255,255,0.2), 0 4px 20px rgba(99, 102, 241, 0.5);
+}
+.lane-btn-active::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  border: 2px solid rgba(255,255,255,0.5);
+  pointer-events: none;
+}
+.lane-btn-inactive {
+  opacity: 0.5;
+}
+
+/* ── Menu Screen ─────────────────────────────────── */
+
+.menu-backdrop {
+  background: radial-gradient(ellipse at center, rgba(99,102,241,0.15) 0%, rgba(0,0,0,0.8) 70%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.menu-title-glow {
+  position: relative;
+  margin-bottom: 8px;
+}
+.menu-title {
+  font-size: 42px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  text-shadow:
+    0 0 40px rgba(99, 102, 241, 0.6),
+    0 0 80px rgba(99, 102, 241, 0.3),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+.highscore-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1));
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.04em;
+}
+
+.start-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5, #4338ca);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 40px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 4px 24px rgba(99, 102, 241, 0.4),
+    0 1px 2px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.start-btn:active {
+  transform: scale(0.95);
+  box-shadow:
+    0 2px 12px rgba(99, 102, 241, 0.3),
+    0 1px 2px rgba(0,0,0,0.3);
+}
+.start-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+/* ── Game Over ───────────────────────────────────── */
+
+.gameover-backdrop {
+  background: radial-gradient(ellipse at center, rgba(239,68,68,0.1) 0%, rgba(0,0,0,0.85) 70%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.gameover-title {
+  font-size: 38px;
+  font-weight: 900;
+  color: #ef4444;
+  text-shadow:
+    0 0 30px rgba(239, 68, 68, 0.5),
+    0 0 60px rgba(239, 68, 68, 0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+  margin-bottom: 4px;
+}
+
+.score-card {
+  background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.9));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 20px 28px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.score-value {
+  font-size: 40px;
+  font-weight: 900;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.new-best-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1a1a2e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-top: 8px;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(251,191,36,0.3); }
+  50% { box-shadow: 0 0 20px rgba(251,191,36,0.6); }
+}
+
+/* ── Shared ──────────────────────────────────────── */
 
 .ui-cta {
   background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent), black 20%));
@@ -114,34 +336,143 @@ body {
 }
 
 .ui-panel {
-  background: rgba(30, 30, 60, 0.95);
+  background: rgba(15, 23, 42, 0.95);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
 }
 
-.lane-btn {
-  width: 80px;
-  height: 56px;
-  border-radius: 12px;
-  font-size: 20px;
-  font-weight: 700;
-  border: 2px solid rgba(255,255,255,0.2);
-  cursor: pointer;
-  transition: transform 0.1s, filter 0.1s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ── Forest Theme — HUD Wood Panels ──────────────── */
+
+.hud-chip-wood {
+  padding: 10px 16px;
+  min-width: 90px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+.hud-chip-wood .hud-label {
+  color: rgba(245, 230, 200, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.hud-chip-wood .hud-value {
+  color: #fff;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Forest Theme — Lane Buttons ─────────────────── */
+
+.lane-btn-left,
+.lane-btn-right {
+  background: linear-gradient(180deg, #92400e, #5c2a08);
+  box-shadow:
+    0 6px 0 #3a1a04,
+    0 8px 16px rgba(0, 0, 0, 0.4),
+    inset 0 2px 0 rgba(255, 220, 150, 0.3),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+  border: 2px solid #2d1505;
+}
+.lane-btn-right {
+  background: linear-gradient(180deg, #166534, #14532d);
+  box-shadow:
+    0 6px 0 #052e16,
+    0 8px 16px rgba(0, 0, 0, 0.4),
+    inset 0 2px 0 rgba(150, 255, 180, 0.3),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+  border: 2px solid #052e16;
 }
 .lane-btn:active {
-  transform: scale(0.92);
-  filter: brightness(0.85);
+  transform: translateY(4px);
+  box-shadow:
+    0 2px 0 #3a1a04,
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 220, 150, 0.3);
 }
-.lane-btn-up {
-  background: linear-gradient(180deg, #22c55e, #16a34a);
-  color: white;
+.lane-btn-active::after {
+  border-color: rgba(255, 220, 100, 0.9);
+  border-radius: 18px;
+  box-shadow: 0 0 16px rgba(255, 220, 100, 0.5);
 }
-.lane-btn-down {
-  background: linear-gradient(180deg, #3b82f6, #2563eb);
-  color: white;
+
+/* ── Forest Theme — Menu ─────────────────────────── */
+
+.menu-backdrop {
+  background:
+    radial-gradient(ellipse at center, rgba(50, 100, 60, 0.2) 0%, rgba(5, 20, 10, 0.85) 70%);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.menu-logo {
+  width: 90%;
+  max-width: 340px;
+  margin: 0 auto;
+  display: block;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6))
+          drop-shadow(0 0 30px rgba(140, 200, 80, 0.3));
+  animation: logo-bob 3s ease-in-out infinite;
+}
+@keyframes logo-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.highscore-badge {
+  background: linear-gradient(135deg, rgba(180, 130, 40, 0.4), rgba(140, 90, 20, 0.3));
+  border: 2px solid rgba(220, 170, 70, 0.5);
+  color: #fcd34d;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.play-btn-img {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+}
+.play-btn-img img {
+  width: 220px;
+  display: block;
+  animation: play-pulse 2s ease-in-out infinite;
+}
+.play-btn-img:active {
+  transform: scale(0.93);
+}
+.play-btn-img:active img {
+  animation: none;
+}
+@keyframes play-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* ── Forest Theme — Game Over ────────────────────── */
+
+.gameover-backdrop {
+  background:
+    radial-gradient(ellipse at center, rgba(80, 20, 20, 0.3) 0%, rgba(5, 10, 5, 0.9) 70%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.gameover-title {
+  color: #fca5a5;
+  text-shadow:
+    0 0 30px rgba(220, 80, 80, 0.6),
+    0 0 60px rgba(200, 50, 50, 0.3),
+    0 3px 6px rgba(0, 0, 0, 0.7);
+}
+
+.score-card {
+  background: linear-gradient(135deg, rgba(50, 30, 15, 0.95), rgba(30, 20, 10, 0.95));
+  border: 2px solid rgba(160, 110, 50, 0.5);
+  box-shadow:
+    inset 0 2px 0 rgba(220, 180, 100, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  border-radius: 16px;
+}
+
+.new-best-badge {
+  background: linear-gradient(135deg, #fcd34d, #f59e0b);
+  color: #2d1505;
 }

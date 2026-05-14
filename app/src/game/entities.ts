@@ -3,30 +3,42 @@ export interface Troop {
   y: number;
   offsetX: number;
   offsetY: number;
+  variant: number;
 }
+
+export type EnemyKind = "snake" | "toad" | "wasp" | "komodo";
 
 export interface Enemy {
   x: number;
   y: number;
+  lanePos: number;
   hp: number;
   maxHp: number;
   speed: number;
+  kind: EnemyKind;
 }
 
 export interface Bullet {
-  x: number;
-  y: number;
+  sx: number;
+  sy: number;
   vx: number;
   vy: number;
+  speed: number;
   damage: number;
 }
 
+export type GateOp = "add" | "multiply" | "divide";
+
+export interface GateChoice {
+  value: number;
+  label: string;
+  op: GateOp;
+}
+
 export interface Gate {
-  x: number;
-  topValue: number;
-  bottomValue: number;
-  topLabel: string;
-  bottomLabel: string;
+  y: number;
+  left: GateChoice;
+  right: GateChoice;
   passed: boolean;
 }
 
@@ -37,6 +49,17 @@ export interface FloatingText {
   color: string;
   life: number;
   maxLife: number;
+}
+
+export interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
 }
 
 export type GamePhase = "menu" | "playing" | "gameover";
@@ -75,12 +98,13 @@ export interface GameState {
   bullets: Bullet[];
   gates: Gate[];
   floatingTexts: FloatingText[];
-  playerLane: "top" | "bottom";
-  playerY: number;
-  worldX: number;
+  particles: Particle[];
+  playerLane: "left" | "right";
+  playerX: number;
+  worldY: number;
   speed: number;
-  nextGateX: number;
-  nextWaveX: number;
+  nextGateY: number;
+  nextWaveY: number;
   lastShotTime: number;
   highScore: number;
 }
@@ -96,12 +120,13 @@ export function createInitialState(config: GameConfig): GameState {
     bullets: [],
     gates: [],
     floatingTexts: [],
-    playerLane: "bottom",
-    playerY: 0,
-    worldX: 0,
+    particles: [],
+    playerLane: "left",
+    playerX: 0,
+    worldY: 0,
     speed: config.baseSpeed,
-    nextGateX: 500,
-    nextWaveX: 300,
+    nextGateY: 500,
+    nextWaveY: 300,
     lastShotTime: 0,
     highScore,
   };
@@ -116,23 +141,26 @@ export function resetForPlay(state: GameState, config: GameConfig): void {
   state.bullets = [];
   state.gates = [];
   state.floatingTexts = [];
-  state.playerLane = "bottom";
-  state.playerY = 0;
-  state.worldX = 0;
+  state.particles = [];
+  state.playerLane = "left";
+  state.playerX = 0;
+  state.worldY = 0;
   state.speed = config.baseSpeed;
-  state.nextGateX = 500;
-  state.nextWaveX = 300;
+  state.nextGateY = 500;
+  state.nextWaveY = 300;
   state.lastShotTime = 0;
   syncTroopPositions(state, 0, 0);
 }
 
 export function syncTroopPositions(state: GameState, baseX: number, baseY: number): void {
   while (state.troops.length < state.troopCount) {
+    const isLeader = state.troops.length === 0;
     state.troops.push({
       x: 0,
       y: 0,
-      offsetX: (Math.random() - 0.5) * 40,
-      offsetY: (Math.random() - 0.5) * 30,
+      offsetX: isLeader ? 0 : (Math.random() - 0.5) * 120,
+      offsetY: isLeader ? 0 : -20 - Math.random() * 100,
+      variant: isLeader ? 0 : Math.floor(Math.random() * 4),
     });
   }
   while (state.troops.length > state.troopCount) {
@@ -141,5 +169,29 @@ export function syncTroopPositions(state: GameState, baseX: number, baseY: numbe
   for (const t of state.troops) {
     t.x = baseX + t.offsetX;
     t.y = baseY + t.offsetY;
+  }
+}
+
+export function spawnParticles(
+  state: GameState,
+  x: number,
+  y: number,
+  color: string,
+  count: number,
+  speed: number
+): void {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = speed * (0.3 + Math.random() * 0.7);
+    state.particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      life: 0.4 + Math.random() * 0.4,
+      maxLife: 0.8,
+      size: 2 + Math.random() * 3,
+      color,
+    });
   }
 }

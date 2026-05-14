@@ -1,9 +1,9 @@
 key,value
-gate_spacing_min,400
-gate_spacing_max,700
-good_value_min,3
-good_value_max,10
-bad_value_min,-8
-bad_value_max,-1
-multiplier_chance,0.1
+gate_spacing_min,350
+gate_spacing_max,550
+good_value_min,4
+good_value_max,12
+bad_value_min,-5
+bad_value_max,-2
+multiplier_chance,0.3
 multiplier_value,2

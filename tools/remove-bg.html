@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sprite Background Remover</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #65a30d;
+    --accent-2: #84cc16;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h1 { margin: 0 0 8px; font-size: 28px; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+  .control-group label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .control-group input[type=range] { width: 100%; }
+  .control-group .value { font-size: 14px; font-weight: 700; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+
+  .drop-zone {
+    border: 3px dashed var(--border);
+    border-radius: 16px;
+    padding: 60px 24px;
+    text-align: center;
+    background: var(--panel);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 24px;
+  }
+  .drop-zone.dragover { border-color: var(--accent-2); background: #1a2e1a; }
+  .drop-zone p { margin: 0; color: var(--muted); }
+  .drop-zone .big { font-size: 18px; color: var(--text); margin-bottom: 8px; font-weight: 600; }
+  .drop-zone .small { font-size: 13px; }
+  #file-input { display: none; }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.1s;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:active { filter: brightness(0.9); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: var(--border); }
+  button.danger { background: var(--danger); }
+
+  .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .result-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .result-card .filename { font-size: 12px; color: var(--muted); word-break: break-all; }
+  .result-card .preview-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .preview {
+    aspect-ratio: 1;
+    background:
+      linear-gradient(45deg, #1f2937 25%, transparent 25%),
+      linear-gradient(-45deg, #1f2937 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1f2937 75%),
+      linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-color: #0f172a;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .preview img { max-width: 100%; max-height: 100%; }
+  .preview .label {
+    position: absolute;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+  }
+  .preview-wrap { position: relative; }
+  .preview-wrap .corner-label {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .download-btn {
+    background: var(--accent);
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+  }
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px;
+    font-size: 14px;
+  }
+  .info-box {
+    background: rgba(132, 204, 22, 0.1);
+    border: 1px solid rgba(132, 204, 22, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--accent-2);
+  }
+  .stats { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🍃 Sprite Background Remover</h1>
+  <p class="subtitle">Drop your Gemini-generated sprites here to strip baked-in checker/white backgrounds. Works locally — no uploads.</p>
+
+  <div class="info-box">
+    <strong>How it works:</strong> Samples corner pixels to learn the background color, then flood-fills connected matching pixels to make them transparent. Adjust tolerance if it's removing too much (lower) or not enough (higher).
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Tolerance</label>
+      <input type="range" id="tolerance" min="5" max="100" value="35" />
+      <span class="value" id="tolerance-value">35</span>
+    </div>
+    <div class="control-group">
+      <label>Edge Softening</label>
+      <input type="range" id="softness" min="0" max="3" value="1" step="1" />
+      <span class="value" id="softness-value">1 px</span>
+    </div>
+  </div>
+
+  <div class="drop-zone" id="drop-zone">
+    <p class="big">Drop PNG images here</p>
+    <p class="small">or click to browse — multiple files supported</p>
+    <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp" multiple />
+  </div>
+
+  <div class="actions">
+    <button id="reprocess-btn" disabled>Reprocess all (apply current settings)</button>
+    <button id="download-all-btn" class="secondary" disabled>Download all (as ZIP)</button>
+    <button id="clear-btn" class="danger" disabled>Clear all</button>
+    <span class="stats" id="stats"></span>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty">No images yet. Drop some PNGs above to get started.</div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const resultsEl = document.getElementById('results');
+const toleranceEl = document.getElementById('tolerance');
+const toleranceValue = document.getElementById('tolerance-value');
+const softnessEl = document.getElementById('softness');
+const softnessValue = document.getElementById('softness-value');
+const reprocessBtn = document.getElementById('reprocess-btn');
+const downloadAllBtn = document.getElementById('download-all-btn');
+const clearBtn = document.getElementById('clear-btn');
+const statsEl = document.getElementById('stats');
+
+let items = []; // { name, originalDataUrl, originalImg, processedDataUrl, processedBlob }
+
+toleranceEl.addEventListener('input', () => {
+  toleranceValue.textContent = toleranceEl.value;
+});
+softnessEl.addEventListener('input', () => {
+  softnessValue.textContent = softnessEl.value + ' px';
+});
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+reprocessBtn.addEventListener('click', () => reprocessAll());
+clearBtn.addEventListener('click', () => {
+  items = [];
+  render();
+});
+downloadAllBtn.addEventListener('click', downloadAllAsZip);
+
+async function handleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  for (const file of files) {
+    const dataUrl = await fileToDataUrl(file);
+    const img = await loadImg(dataUrl);
+    items.push({
+      name: file.name,
+      originalDataUrl: dataUrl,
+      originalImg: img,
+      processedDataUrl: null,
+      processedBlob: null,
+    });
+  }
+  await reprocessAll();
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function loadImg(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function reprocessAll() {
+  if (items.length === 0) return;
+  const tolerance = parseInt(toleranceEl.value, 10);
+  const softness = parseInt(softnessEl.value, 10);
+  for (const item of items) {
+    const result = removeBackground(item.originalImg, tolerance, softness);
+    item.processedDataUrl = result.dataUrl;
+    item.processedBlob = result.blob;
+  }
+  render();
+}
+
+function removeBackground(img, tolerance, softness) {
+  const w = img.width;
+  const h = img.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  // Sample corner + edge midpoints for background color set
+  const samples = [];
+  const points = [
+    [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
+    [Math.floor(w / 2), 0], [Math.floor(w / 2), h - 1],
+    [0, Math.floor(h / 2)], [w - 1, Math.floor(h / 2)],
+  ];
+  for (const [x, y] of points) {
+    const idx = (y * w + x) * 4;
+    if (data[idx + 3] > 5) {
+      samples.push([data[idx], data[idx + 1], data[idx + 2]]);
+    }
+  }
+
+  if (samples.length === 0) {
+    return canvasToOutput(canvas);
+  }
+
+  const tolSq = tolerance * tolerance * 3;
+  const colorMatch = (r, g, b) => {
+    for (const [sr, sg, sb] of samples) {
+      const dr = r - sr, dg = g - sg, db = b - sb;
+      if (dr * dr + dg * dg + db * db < tolSq) return true;
+    }
+    return false;
+  };
+
+  // Flood fill from all 8 sample points
+  const visited = new Uint8Array(w * h);
+  const stack = [];
+  for (const [sx, sy] of points) {
+    stack.push(sx, sy);
+    while (stack.length > 0) {
+      const y = stack.pop();
+      const x = stack.pop();
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const pi = y * w + x;
+      if (visited[pi]) continue;
+      const di = pi * 4;
+      const r = data[di], g = data[di + 1], b = data[di + 2], a = data[di + 3];
+      if (a < 5) { visited[pi] = 1; continue; }
+      if (!colorMatch(r, g, b)) continue;
+      visited[pi] = 1;
+      data[di + 3] = 0;
+      stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+    }
+  }
+
+  // Edge softening — for each iteration, kill any background-colored pixels next to transparency
+  for (let pass = 0; pass < softness; pass++) {
+    const snapshot = new Uint8Array(data.length);
+    snapshot.set(data);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const di = (y * w + x) * 4;
+        if (snapshot[di + 3] === 0) continue;
+        if (!colorMatch(snapshot[di], snapshot[di + 1], snapshot[di + 2])) continue;
+        let near = false;
+        const ns = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
+        for (const [nx, ny] of ns) {
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          if (snapshot[(ny * w + nx) * 4 + 3] === 0) { near = true; break; }
+        }
+        if (near) data[di + 3] = 0;
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvasToOutput(canvas);
+}
+
+function canvasToOutput(canvas) {
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    blob: null, // populated lazily on download
+    canvas,
+  };
+}
+
+function render() {
+  if (items.length === 0) {
+    resultsEl.innerHTML = '<div class="empty">No images yet. Drop some PNGs above to get started.</div>';
+    reprocessBtn.disabled = true;
+    downloadAllBtn.disabled = true;
+    clearBtn.disabled = true;
+    statsEl.textContent = '';
+    return;
+  }
+  reprocessBtn.disabled = false;
+  downloadAllBtn.disabled = false;
+  clearBtn.disabled = false;
+  statsEl.textContent = `${items.length} image${items.length === 1 ? '' : 's'} loaded`;
+
+  resultsEl.innerHTML = '';
+  for (const item of items) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.innerHTML = `
+      <div class="filename">${escapeHtml(item.name)}</div>
+      <div class="preview-row">
+        <div class="preview-wrap">
+          <div class="preview"><img src="${item.originalDataUrl}" alt="original" /></div>
+          <div class="corner-label">Original</div>
+        </div>
+        <div class="preview-wrap">
+          <div class="preview"><img src="${item.processedDataUrl}" alt="processed" /></div>
+          <div class="corner-label">Cleaned</div>
+        </div>
+      </div>
+      <a class="download-btn" href="${item.processedDataUrl}" download="${cleanedFilename(item.name)}">Download cleaned</a>
+    `;
+    resultsEl.appendChild(card);
+  }
+}
+
+function cleanedFilename(name) {
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  return base + '-clean.png';
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function downloadAllAsZip() {
+  // Simple sequential download (most browsers allow multiple downloads after first user gesture)
+  if (items.length === 1) {
+    const item = items[0];
+    triggerDownload(item.processedDataUrl, cleanedFilename(item.name));
+    return;
+  }
+  for (const item of items) {
+    triggerDownload(item.processedDataUrl, cleanedFilename(item.name));
+    await new Promise(r => setTimeout(r, 150));
+  }
+}
+
+function triggerDownload(dataUrl, name) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+</body>
+</html>

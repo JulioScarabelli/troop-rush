@@ -1,28 +1,30 @@
 interface LaneButtonsProps {
-  currentLane: "top" | "bottom";
-  onLaneChange: (lane: "top" | "bottom") => void;
+  currentLane: "left" | "right";
+  onLaneChange: (lane: "left" | "right") => void;
 }
 
 export default function LaneButtons({ currentLane, onLaneChange }: LaneButtonsProps) {
   return (
-    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-6 z-10">
+    <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-10 z-10">
       <button
-        className={`lane-btn lane-btn-up ${currentLane === "top" ? "ring-2 ring-white ring-offset-2 ring-offset-transparent" : "opacity-60"}`}
+        className={`lane-btn lane-btn-left ${currentLane === "left" ? "lane-btn-active" : "lane-btn-inactive"}`}
         onPointerDown={(e) => {
           e.preventDefault();
-          onLaneChange("top");
+          onLaneChange("left");
         }}
       >
-        UP
+        <span className="lane-btn-arrow">&larr;</span>
+        <span className="lane-btn-text">LEFT</span>
       </button>
       <button
-        className={`lane-btn lane-btn-down ${currentLane === "bottom" ? "ring-2 ring-white ring-offset-2 ring-offset-transparent" : "opacity-60"}`}
+        className={`lane-btn lane-btn-right ${currentLane === "right" ? "lane-btn-active" : "lane-btn-inactive"}`}
         onPointerDown={(e) => {
           e.preventDefault();
-          onLaneChange("bottom");
+          onLaneChange("right");
         }}
       >
-        DOWN
+        <span className="lane-btn-arrow">&rarr;</span>
+        <span className="lane-btn-text">RIGHT</span>
       </button>
     </div>
   );

@@ -2,10 +2,12 @@ import { useRef, useEffect, useCallback } from "react";
 import { GameState, GameConfig } from "./entities";
 import { render } from "./renderer";
 import { update } from "./gameLoop";
+import { GameSprites } from "./sprites";
 
 interface GameCanvasProps {
   state: GameState;
   config: GameConfig;
+  sprites: GameSprites;
   onScoreChange: (score: number) => void;
   onTroopCountChange: (count: number) => void;
   onGameOver: () => void;
@@ -14,6 +16,7 @@ interface GameCanvasProps {
 export default function GameCanvas({
   state,
   config,
+  sprites,
   onScoreChange,
   onTroopCountChange,
   onGameOver,
@@ -42,7 +45,7 @@ export default function GameCanvas({
       lastTimeRef.current = time;
 
       update(state, config, dt, canvas.width, canvas.height, time / 1000);
-      render(ctx, state, canvas.width, canvas.height);
+      render(ctx, state, sprites, canvas.width, canvas.height);
 
       onScoreChange(state.score);
       onTroopCountChange(state.troopCount);
@@ -54,7 +57,7 @@ export default function GameCanvas({
 
       rafRef.current = requestAnimationFrame(loop);
     },
-    [state, config, onScoreChange, onTroopCountChange, onGameOver]
+    [state, config, sprites, onScoreChange, onTroopCountChange, onGameOver]
   );
 
   useEffect(() => {

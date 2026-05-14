@@ -1,4 +1,4 @@
-import { GameState, GameConfig, syncTroopPositions, Bullet } from "./entities";
+import { GameState, GameConfig, syncTroopPositions } from "./entities";
 import { spawnGates, spawnEnemies } from "./spawner";
 import {
   processGateCollisions,
@@ -6,7 +6,65 @@ import {
   processTroopEnemyCollisions,
 } from "./collision";
 
-const PLAYER_SCREEN_X = 80;
+export const PLAYER_SCREEN_Y_RATIO = 0.82;
+export const VANISH_Y_RATIO = 0.12;
+export const ROAD_WIDTH_BOTTOM = 0.88;
+export const ROAD_WIDTH_TOP = 0.08;
+
+export function worldToScreenY(worldEntityY: number, state: GameState, canvasH: number): number {
+  const vanishY = canvasH * VANISH_Y_RATIO;
+  const playerScreenY = canvasH * PLAYER_SCREEN_Y_RATIO;
+  const aheadRange = playerScreenY - vanishY;
+  const behindRange = canvasH - playerScreenY;
+
+  const worldDist = worldEntityY - state.worldY;
+  const viewDepthAhead = 700;
+  const viewDepthBehind = 200;
+
+  if (worldDist >= 0) {
+    const t = Math.min(1, worldDist / viewDepthAhead);
+    const curved = Math.pow(t, 0.55);
+    return playerScreenY - curved * aheadRange;
+  } else {
+    const t = Math.max(-1, worldDist / viewDepthBehind);
+    return playerScreenY - t * behindRange;
+  }
+}
+
+export function depthScale(screenY: number, canvasH: number): number {
+  const vanishY = canvasH * VANISH_Y_RATIO;
+  const playerY = canvasH * PLAYER_SCREEN_Y_RATIO;
+  // Things below player (screenY > playerY) are even closer — scale capped at 1.2
+  if (screenY > playerY) {
+    const extra = (screenY - playerY) / (canvasH - playerY);
+    return Math.min(1.2, 1 + extra * 0.2);
+  }
+  const t = Math.max(0, Math.min(1, (screenY - vanishY) / (playerY - vanishY)));
+  return t;
+}
+
+export function perspectiveX(
+  lanePos: number,
+  screenY: number,
+  canvasW: number,
+  canvasH: number
+): number {
+  const scale = depthScale(screenY, canvasH);
+  const roadW = canvasW * (ROAD_WIDTH_TOP + (ROAD_WIDTH_BOTTOM - ROAD_WIDTH_TOP) * scale);
+  const roadL = (canvasW - roadW) / 2;
+  return roadL + lanePos * roadW;
+}
+
+export function roadEdgesAtY(
+  screenY: number,
+  canvasW: number,
+  canvasH: number
+): { left: number; right: number } {
+  const scale = depthScale(screenY, canvasH);
+  const roadW = canvasW * (ROAD_WIDTH_TOP + (ROAD_WIDTH_BOTTOM - ROAD_WIDTH_TOP) * scale);
+  const roadL = (canvasW - roadW) / 2;
+  return { left: roadL, right: roadL + roadW };
+}
 
 export function update(
   state: GameState,
@@ -18,86 +76,106 @@ export function update(
 ): void {
   if (state.phase !== "playing") return;
 
-  const playTop = canvasH * 0.15;
-  const playBot = canvasH * 0.85;
-  const playH = playBot - playTop;
-  const topLaneY = playTop + playH * 0.25;
-  const botLaneY = playTop + playH * 0.75;
-  const targetY = state.playerLane === "top" ? topLaneY : botLaneY;
+  const playerScreenY = canvasH * PLAYER_SCREEN_Y_RATIO;
+  const targetLanePos = state.playerLane === "left" ? 0.25 : 0.75;
+  const targetX = perspectiveX(targetLanePos, playerScreenY, canvasW, canvasH);
 
-  state.playerY += (targetY - state.playerY) * Math.min(1, dt * 8);
+  state.playerX += (targetX - state.playerX) * Math.min(1, dt * 10);
 
   state.speed = Math.min(
-    config.baseSpeed + (state.worldX / 100) * config.speedIncreasePer100m,
+    config.baseSpeed + (state.worldY / 100) * config.speedIncreasePer100m,
     config.maxSpeed
   );
-  state.worldX += state.speed * dt;
-  state.score = Math.floor(state.worldX / 10);
+  state.worldY += state.speed * dt;
+  state.score = Math.floor(state.worldY / 10);
 
-  spawnGates(state, config, canvasH);
-  spawnEnemies(state, config, canvasH);
+  spawnGates(state, config);
+  spawnEnemies(state, config, canvasW);
 
+  // Enemies move toward the player (increasing worldY means forward,
+  // but enemies move *down* the screen by decreasing their world Y)
   for (const enemy of state.enemies) {
-    enemy.x -= enemy.speed * dt;
+    enemy.y -= enemy.speed * dt;
   }
 
+  // Shooting — troops fire at enemies that are ahead (higher world Y)
   if (state.troopCount > 0 && state.enemies.length > 0) {
     const shotInterval = 1 / config.troopFireRate;
     if (time - state.lastShotTime >= shotInterval) {
       state.lastShotTime = time;
 
-      let nearest = state.enemies[0];
-      let nearestDist = Infinity;
-      for (const e of state.enemies) {
-        const d = e.x - state.worldX;
-        if (d > 0 && d < nearestDist) {
-          nearestDist = d;
-          nearest = e;
-        }
-      }
+      const playerWorldY = state.worldY;
+      const shooters = Math.min(state.troopCount, state.enemies.length);
 
-      if (nearest) {
-        const bulletStartX = state.worldX + PLAYER_SCREEN_X + 20;
-        const dx = nearest.x - bulletStartX;
-        const dy = nearest.y - state.playerY;
+      const sortedEnemies = [...state.enemies]
+        .map((e) => ({ enemy: e, dist: e.y - playerWorldY }))
+        .filter((e) => e.dist > 0)
+        .sort((a, b) => a.dist - b.dist);
+
+      for (let i = 0; i < shooters && i < sortedEnemies.length; i++) {
+        const troop = state.troops[i % state.troops.length];
+        if (!troop) continue;
+        const target = sortedEnemies[i % sortedEnemies.length].enemy;
+
+        const troopLane = state.playerLane === "left"
+          ? 0.25 + (troop.offsetX / 120) * 0.35
+          : 0.75 + (troop.offsetX / 120) * 0.35;
+        const troopSY = worldToScreenY(troop.y, state, canvasH);
+        const troopSX = perspectiveX(troopLane, troopSY, canvasW, canvasH);
+
+        const enemySY = worldToScreenY(target.y, state, canvasH);
+        const enemySX = perspectiveX(target.lanePos, enemySY, canvasW, canvasH);
+
+        // Aim straight at the enemy
+        const dx = enemySX - troopSX;
+        const dy = enemySY - troopSY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 0) {
-          const bullet: Bullet = {
-            x: bulletStartX,
-            y: state.playerY,
+        if (dist > 1) {
+          state.bullets.push({
+            sx: troopSX,
+            sy: troopSY,
             vx: (dx / dist) * config.bulletSpeed,
             vy: (dy / dist) * config.bulletSpeed,
+            speed: config.bulletSpeed,
             damage: config.bulletDamage,
-          };
-          state.bullets.push(bullet);
+          });
         }
       }
     }
   }
 
   for (const bullet of state.bullets) {
-    bullet.x += bullet.vx * dt;
-    bullet.y += bullet.vy * dt;
+    bullet.sx += bullet.vx * dt;
+    bullet.sy += bullet.vy * dt;
   }
 
-  state.bullets = state.bullets.filter((b) => {
-    const screenX = b.x - state.worldX;
-    return screenX > -20 && screenX < canvasW + 50 && b.y > -20 && b.y < canvasH + 20;
-  });
+  state.bullets = state.bullets.filter((b) =>
+    b.sx > -20 && b.sx < canvasW + 20 && b.sy > -50 && b.sy < canvasH + 20
+  );
 
-  processGateCollisions(state, config, PLAYER_SCREEN_X);
-  processBulletCollisions(state);
-  processTroopEnemyCollisions(state, PLAYER_SCREEN_X);
+  // Collisions
+  processGateCollisions(state, config, canvasH);
+  processBulletCollisions(state, canvasH, canvasW);
+  processTroopEnemyCollisions(state, canvasH, canvasW);
 
-  state.gates = state.gates.filter((g) => g.x - state.worldX > -100);
-  state.enemies = state.enemies.filter((e) => e.x - state.worldX > -50);
+  // Clean up entities that have scrolled past the player
+  state.gates = state.gates.filter((g) => g.y > state.worldY - 200);
+  state.enemies = state.enemies.filter((e) => e.y > state.worldY - 100);
 
   for (const ft of state.floatingTexts) {
     ft.life -= dt;
   }
   state.floatingTexts = state.floatingTexts.filter((ft) => ft.life > 0);
 
-  syncTroopPositions(state, state.worldX + PLAYER_SCREEN_X, state.playerY);
+  for (const p of state.particles) {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 200 * dt;
+    p.life -= dt;
+  }
+  state.particles = state.particles.filter((p) => p.life > 0);
+
+  syncTroopPositions(state, state.playerX, state.worldY);
 
   if (state.troopCount <= 0) {
     state.phase = "gameover";

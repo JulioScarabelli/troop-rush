@@ -1,4 +1,4 @@
-import { GameState, GameConfig, Gate, Enemy } from "./entities";
+import { GameState, GameConfig, Gate, GateChoice, Enemy, EnemyKind } from "./entities";
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -8,57 +8,73 @@ function randFloat(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
-export function spawnGates(state: GameState, config: GameConfig, canvasH: number): void {
-  if (state.worldX < state.nextGateX) return;
-
-  let goodVal: number;
-  let goodLabel: string;
-  if (Math.random() < config.multiplierChance) {
-    goodVal = config.multiplierValue;
-    goodLabel = `x${goodVal}`;
+function makeGoodChoice(): GateChoice {
+  const roll = Math.random();
+  if (roll < 0.35) {
+    const v = randInt(2, 3);
+    return { value: v, label: `x${v}`, op: "multiply" };
+  } else if (roll < 0.55) {
+    const v = randInt(3, 8);
+    return { value: v, label: `+${v}`, op: "add" };
   } else {
-    goodVal = randInt(config.goodValueMin, config.goodValueMax);
-    goodLabel = `+${goodVal}`;
+    const v = randInt(5, 15);
+    return { value: v, label: `+${v}`, op: "add" };
   }
+}
 
-  const badVal = randInt(config.badValueMin, config.badValueMax);
-  const badLabel = `${badVal}`;
+function makeBadChoice(): GateChoice {
+  const roll = Math.random();
+  if (roll < 0.3) {
+    return { value: 2, label: `÷2`, op: "divide" };
+  } else {
+    const v = randInt(1, 4);
+    return { value: -v, label: `-${v}`, op: "add" };
+  }
+}
 
-  const goodOnTop = Math.random() < 0.5;
+export function spawnGates(state: GameState, config: GameConfig): void {
+  if (state.worldY < state.nextGateY) return;
+
+  const good = makeGoodChoice();
+  const bad = makeBadChoice();
+  const goodOnLeft = Math.random() < 0.5;
 
   const gate: Gate = {
-    x: state.worldX + 400,
-    topValue: goodOnTop ? goodVal : badVal,
-    bottomValue: goodOnTop ? badVal : goodVal,
-    topLabel: goodOnTop ? goodLabel : badLabel,
-    bottomLabel: goodOnTop ? badLabel : goodLabel,
+    y: state.worldY + 600,
+    left: goodOnLeft ? good : bad,
+    right: goodOnLeft ? bad : good,
     passed: false,
   };
 
   state.gates.push(gate);
-  state.nextGateX = state.worldX + 400 + randFloat(config.gateSpacingMin, config.gateSpacingMax);
+  state.nextGateY = state.worldY + randFloat(config.gateSpacingMin, config.gateSpacingMax);
 }
 
-export function spawnEnemies(state: GameState, config: GameConfig, canvasH: number): void {
-  if (state.worldX < state.nextWaveX) return;
+export function spawnEnemies(state: GameState, config: GameConfig, canvasW: number): void {
+  if (state.worldY < state.nextWaveY) return;
 
-  const distanceFactor = state.worldX / 100;
+  const distanceFactor = state.worldY / 100;
   const waveSize = Math.floor(config.waveSizeBase + distanceFactor * config.waveSizeGrowthPer100m);
 
-  const spawnX = state.worldX + 450;
-  const halfH = canvasH / 2;
+  const spawnY = state.worldY + 580;
+  const playLeft = canvasW * 0.1;
+  const playRight = canvasW * 0.9;
 
+  const kinds: EnemyKind[] = ["snake", "toad", "wasp"];
   for (let i = 0; i < waveSize; i++) {
-    const lane = Math.random() < 0.5 ? -1 : 1;
+    const lanePos = 0.1 + Math.random() * 0.8;
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
     const enemy: Enemy = {
-      x: spawnX + Math.random() * 60,
-      y: halfH + lane * (30 + Math.random() * (halfH * 0.5)),
+      x: playLeft + lanePos * (playRight - playLeft),
+      y: spawnY + Math.random() * 80,
+      lanePos,
       hp: config.enemyBaseHp,
       maxHp: config.enemyBaseHp,
       speed: config.enemySpeed,
+      kind,
     };
     state.enemies.push(enemy);
   }
 
-  state.nextWaveX = state.worldX + randFloat(config.waveSpacingMin, config.waveSpacingMax);
+  state.nextWaveY = state.worldY + randFloat(config.waveSpacingMin, config.waveSpacingMax);
 }

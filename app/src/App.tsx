@@ -6,6 +6,7 @@ import HUD from "./components/HUD";
 import LaneButtons from "./components/LaneButtons";
 import MenuScreen from "./components/MenuScreen";
 import GameOverScreen from "./components/GameOverScreen";
+import { GameSprites, loadAllSprites } from "./game/sprites";
 
 function parseNum(map: Map<string, string>, key: string, fallback: number): number {
   const val = map.get(key);
@@ -49,6 +50,7 @@ async function loadGameConfig(): Promise<GameConfig> {
 
 export default function App() {
   const [config, setConfig] = useState<GameConfig | null>(null);
+  const [sprites, setSprites] = useState<GameSprites | null>(null);
   const [score, setScore] = useState(0);
   const [troopCount, setTroopCount] = useState(0);
   const [phase, setPhase] = useState<"menu" | "playing" | "gameover">("menu");
@@ -56,9 +58,10 @@ export default function App() {
   const stateRef = useRef<GameState | null>(null);
 
   useEffect(() => {
-    loadGameConfig()
-      .then((cfg) => {
+    Promise.all([loadGameConfig(), loadAllSprites()])
+      .then(([cfg, spr]) => {
         setConfig(cfg);
+        setSprites(spr);
         const state = createInitialState(cfg);
         stateRef.current = state;
         setTroopCount(cfg.startTroops);
@@ -105,10 +108,10 @@ export default function App() {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (!stateRef.current) return;
-      if (e.key === "ArrowUp") {
-        stateRef.current.playerLane = "top";
-      } else if (e.key === "ArrowDown") {
-        stateRef.current.playerLane = "bottom";
+      if (e.key === "ArrowLeft") {
+        stateRef.current.playerLane = "left";
+      } else if (e.key === "ArrowRight") {
+        stateRef.current.playerLane = "right";
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -132,17 +135,17 @@ export default function App() {
     setIsNewHighScore(stateRef.current.score >= prevHigh && stateRef.current.score > 0);
   }, []);
 
-  const handleLaneChange = useCallback((lane: "top" | "bottom") => {
+  const handleLaneChange = useCallback((lane: "left" | "right") => {
     if (stateRef.current) {
       stateRef.current.playerLane = lane;
     }
   }, []);
 
-  if (!config || !stateRef.current) {
+  if (!config || !sprites || !stateRef.current) {
     return (
       <div className="app-shell relative mx-auto flex w-full flex-col overflow-hidden">
         <div className="game-screen flex items-center justify-center">
-          <p className="ink-soft">Loading...</p>
+          <p className="ink-soft">Loading the forest...</p>
         </div>
       </div>
     );
@@ -154,6 +157,7 @@ export default function App() {
         <GameCanvas
           state={stateRef.current}
           config={config}
+          sprites={sprites}
           onScoreChange={setScore}
           onTroopCountChange={setTroopCount}
           onGameOver={handleGameOver}
